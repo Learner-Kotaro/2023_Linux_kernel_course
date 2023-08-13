@@ -427,22 +427,29 @@ int main()
 
     treeint_init();
 
-    for (int i = 0; i < 100; ++i)
-        treeint_insert(rand() % 99);
+    for (int i = 0; i < 10000; ++i)
+        treeint_insert(rand() % 10000);
 
     printf("[ After insertions ]\n");
     treeint_dump();
-
+    clock_t start, end;
     printf("Removing...\n");
-    for (int i = 0; i < 100; ++i) {
-        int v = rand() % 99;
+
+    start=clock();
+    for (int i = 0; i < 10000; ++i) {
+        int v = rand() % 10000;
         printf("%2d  ", v);
         if ((i + 1) % 10 == 0)
             printf("\n");
         treeint_remove(v);
     }
+    end=clock();
+    double diff = end - start;
     printf("\n");
-
+    printf(" %f ms", diff);
+    printf(" %f sec", diff / CLOCKS_PER_SEC );
+    printf("\n");
+    
     printf("[ After removals ]\n");
     treeint_dump();
 
