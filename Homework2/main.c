@@ -53,6 +53,7 @@ struct node {
     mutex_t mutex;
     cond_t cond;
     bool ready;
+    int ticks; // Add this field
 };
 
 static void node_init(struct clock *clock,
@@ -64,6 +65,7 @@ static void node_init(struct clock *clock,
     mutex_init(&node->mutex);
     cond_init(&node->cond);
     node->ready = false;
+    node->ticks = 0; // Initialize ticks to 0
 }
 
 static void node_wait(struct node *node)
@@ -96,10 +98,11 @@ static void *thread_func(void *ptr)
             node_signal(self);
         } else {
             clock_tick(self->clock);
+            self->ticks++; // Increment ticks
+            printf("Thread Ticks: %d\n", self->ticks); // Print ticks
         }
         bit = !bit;
     }
-
     node_signal(self);
     return NULL;
 }
@@ -128,7 +131,9 @@ int main(void)
     for (int i = 0; i < N_NODES; ++i) {
         if (pthread_join(threads[i], NULL) != 0)
             return EXIT_FAILURE;
+        printf("Thread %d Ticks: %d\n", i, nodes[i].ticks); // Print each thread's ticks
     }
+    
 
     return EXIT_SUCCESS;
 }
