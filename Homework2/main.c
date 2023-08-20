@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "cond.h"
 #include "futex.h"
@@ -54,11 +55,13 @@ struct node {
     cond_t cond;
     bool ready;
     int ticks; // Add this field
+    int node_index; // Add this field
 };
 
 static void node_init(struct clock *clock,
                       struct node *parent,
-                      struct node *node)
+                      struct node *node,
+                      int node_index)
 {
     node->clock = clock;
     node->parent = parent;
@@ -66,6 +69,7 @@ static void node_init(struct clock *clock,
     cond_init(&node->cond);
     node->ready = false;
     node->ticks = 0; // Initialize ticks to 0
+    node->node_index = node_index; // Initialize node index
 }
 
 static void node_wait(struct node *node)
@@ -89,6 +93,7 @@ static void *thread_func(void *ptr)
 {
     struct node *self = ptr;
     bool bit = false;
+    int node_index = self->node_index; // Get the node index
 
     for (int i = 1; clock_wait(self->clock, i); ++i) {
         if (self->parent)
@@ -99,7 +104,7 @@ static void *thread_func(void *ptr)
         } else {
             clock_tick(self->clock);
             self->ticks++; // Increment ticks
-            printf("Thread Ticks: %d\n", self->ticks); // Print ticks
+            printf("Node Index: %d, Ticks: %d\n", node_index, self->ticks); // Print node index and ticks
         }
         bit = !bit;
     }
@@ -114,9 +119,9 @@ int main(void)
 
 #define N_NODES 16
     struct node nodes[N_NODES];
-    node_init(&clock, NULL, &nodes[0]);
+    node_init(&clock, NULL, &nodes[0], 0);
     for (int i = 1; i < N_NODES; ++i)
-        node_init(&clock, &nodes[i - 1], &nodes[i]);
+        node_init(&clock, &nodes[i - 1], &nodes[i], i);
 
     pthread_t threads[N_NODES];
     for (int i = 0; i < N_NODES; ++i) {
